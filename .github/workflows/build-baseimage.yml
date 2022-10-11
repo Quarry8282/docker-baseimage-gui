@@ -1,7 +1,8 @@
 name: Docker Baseimage CI/CD
 
 env:
-  DOCKER_IMAGE_NAME: jlesage/baseimage-gui
+  DOCKER_IMAGE_NAME: acting3968/baseimage-gui
+  GH_IMAGE_NAME: Quarry8282/baseimage-gui
 
 on:
   push:
@@ -26,17 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         info:
-          - '{ "tag_prefix": "alpine-3.13",  "baseimage": "jlesage/baseimage:alpine-3.13-v3.0.3",  "platforms": "linux/amd64,linux/386,linux/arm/v6,linux/arm/v7,linux/arm64/v8" }'
-          - '{ "tag_prefix": "alpine-3.14",  "baseimage": "jlesage/baseimage:alpine-3.14-v3.0.3",  "platforms": "linux/amd64,linux/386,linux/arm/v6,linux/arm/v7,linux/arm64/v8" }'
-          - '{ "tag_prefix": "alpine-3.15",  "baseimage": "jlesage/baseimage:alpine-3.15-v3.0.3",  "platforms": "linux/amd64,linux/386,linux/arm/v6,linux/arm/v7,linux/arm64/v8" }'
-          - '{ "tag_prefix": "alpine-3.16",  "baseimage": "jlesage/baseimage:alpine-3.16-v3.0.3",  "platforms": "linux/amd64,linux/386,linux/arm/v6,linux/arm/v7,linux/arm64/v8" }'
-          - '{ "tag_prefix": "debian-8",     "baseimage": "jlesage/baseimage:debian-8-v3.0.3",     "platforms": "linux/amd64,linux/386,linux/arm/v7" }'
-          - '{ "tag_prefix": "debian-9",     "baseimage": "jlesage/baseimage:debian-9-v3.0.3",     "platforms": "linux/amd64,linux/386,linux/arm/v7,linux/arm64/v8" }'
-          - '{ "tag_prefix": "debian-10",    "baseimage": "jlesage/baseimage:debian-10-v3.0.3",    "platforms": "linux/amd64,linux/386,linux/arm/v7,linux/arm64/v8" }'
-          - '{ "tag_prefix": "debian-11",    "baseimage": "jlesage/baseimage:debian-11-v3.0.3",    "platforms": "linux/amd64,linux/386,linux/arm/v7,linux/arm64/v8" }'
-          - '{ "tag_prefix": "ubuntu-16.04", "baseimage": "jlesage/baseimage:ubuntu-16.04-v3.0.3", "platforms": "linux/amd64,linux/386,linux/arm/v7,linux/arm64/v8" }'
-          - '{ "tag_prefix": "ubuntu-18.04", "baseimage": "jlesage/baseimage:ubuntu-18.04-v3.0.3", "platforms": "linux/amd64,linux/386,linux/arm/v7,linux/arm64/v8" }'
-          - '{ "tag_prefix": "ubuntu-20.04", "baseimage": "jlesage/baseimage:ubuntu-20.04-v3.0.3", "platforms": "linux/amd64,linux/arm/v7,linux/arm64/v8" }'
+          - '{ "tag_prefix": "alpine-edge",  "baseimage": "acting3968/baseimage:alpine-edge-v1",  "platforms": "linux/amd64" }'
 
     steps:
       - name: Free disk space
@@ -128,11 +119,6 @@ jobs:
       - name: Setup BATS
         uses: mig4/setup-bats@v1
 
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: arm,arm64,ppc64le,mips64,s390x
-
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
         with:
@@ -166,12 +152,27 @@ jobs:
             bats tests
           done
 
+      - name: Login to GHCR
+        if: ${{ steps.prep.outputs.is_release == 'no' }}
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Login to DockerHub
         if: ${{ steps.prep.outputs.is_release == 'yes' }}
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          
+      - name: Extract metadata (tags, labels) for Docker
+        if: ${{ steps.prep.outputs.is_release == 'no' }}
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/${{ env.GH_IMAGE_NAME }}
 
       - name: Build and push to Dockerhub
         # NOTE: The `--load` option of `buildx` only works with a single
@@ -191,31 +192,3 @@ jobs:
             BASEIMAGE=${{ fromJSON(matrix.info).baseimage }}
             IMAGE_VERSION=${{ steps.prep.outputs.label_version }}
           cache-from: type=gha,scope=${{ fromJSON(matrix.info).tag_prefix }}
-
-  post-build:
-    name: Post-build
-    needs: [ build ]
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Dockerhub description
-        if: ${{ steps.prep.outputs.release_type == 'standard' }}
-        uses: peter-evans/dockerhub-description@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          repository: ${{ env.DOCKER_IMAGE_NAME }}
-          readme-filepath: README.md
-
-  notification:
-    name: Notification
-    needs: [ build, post-build ]
-    runs-on: ubuntu-20.04
-    if: ${{ always() }}
-
-    steps:
-      - name: Pushover notification
-        uses: desiderati/github-action-pushover@v1
-        with:
-          job-status: ${{ needs.build.result }}
-          pushover-api-token: ${{ secrets.PUSHOVER_API_TOKEN }}
-          pushover-user-key: ${{ secrets.PUSHOVER_USER_KEY }}
