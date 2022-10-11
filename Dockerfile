@@ -1,7 +1,7 @@
 #
 # baseimage-gui Dockerfile
 #
-# https://github.com/jlesage/docker-baseimage-gui
+# Forked from https://github.com/jlesage/docker-baseimage-gui
 #
 
 ARG BASEIMAGE=unknown
@@ -250,5 +250,5 @@ LABEL \
       org.label-schema.name="baseimage-gui" \
       org.label-schema.description="A minimal docker baseimage to ease creation of X graphical application containers" \
       org.label-schema.version="${IMAGE_VERSION}" \
-      org.label-schema.vcs-url="https://github.com/jlesage/docker-baseimage-gui" \
+      org.label-schema.vcs-url="https://github.com/Quarry8282/docker-baseimage-gui" \
       org.label-schema.schema-version="1.0"
