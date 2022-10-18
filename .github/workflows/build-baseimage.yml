@@ -34,25 +34,6 @@ jobs:
           - '{ "tag_prefix": "alpine-edge",  "baseimage": "acting3968/baseimage:alpine-edge-v1",  "platforms": "linux/amd64" }'
 
     steps:
-      - name: Free disk space
-        run: |
-          # Free disk space.
-          echo "::group::Before"
-          df -h /
-          echo "::endgroup::"
-          echo "::group::Removing unneeded softwares and files..."
-          for DIR in /usr/local/lib/android /usr/share/dotnet /opt/ghc
-          do
-            if [ -d "$DIR" ]; then
-                echo "Removing $DIR..."
-                sudo rm -r "$DIR"
-            fi
-          done
-          echo "::endgroup::"
-          echo "::group::After"
-          df -h /
-          echo "::endgroup::"
-
       - name: Prepare
         id: prep
         run: |
@@ -156,13 +137,13 @@ jobs:
             bats tests
           done
 
-      - name: Login to GHCR
-        if: ${{ steps.prep.outputs.is_release == 'no' }}
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Login to GHCR
+#        if: ${{ steps.prep.outputs.is_release == 'no' }}
+#        uses: docker/login-action@v2
+#        with:
+#          registry: ghcr.io
+#          username: ${{ github.actor }}
+#          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Login to DockerHub
         if: ${{ steps.prep.outputs.is_release == 'yes' }}
