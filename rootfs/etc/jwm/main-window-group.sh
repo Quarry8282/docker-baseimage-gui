@@ -14,7 +14,7 @@ echo "<Group>"
 # Print group types, used to match the window.
 MATCH_CRITERIAS=
 if [ -f /etc/jwm/main-window-selection.jwmrc ]; then
-    MATCH_CRITERIAS="$(cat /etc/jwm/main-window-selection.jwmrc | grep '<Type>\|<Class>\|<Name>\|<WmName>')"
+    MATCH_CRITERIAS="$(cat /etc/jwm/main-window-selection.jwmrc | grep '<Type>\|<Class>\|<Name>\|<Title>\|<Option>')"
 fi
 echo "${MATCH_CRITERIAS:-<Type>normal</Type>}"
 
@@ -22,8 +22,8 @@ echo "${MATCH_CRITERIAS:-<Type>normal</Type>}"
 echo "\
 <Option>layer:below</Option>
 <Option>maximized</Option>
-<Option>notitle</Option>
-<Option>noborder</Option>"
+<Option>nomaxtitle</Option>
+<Option>nomaxborder</Option>"
 
 # Print the end of the group.
 echo "</Group>"

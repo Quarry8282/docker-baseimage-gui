@@ -301,6 +301,7 @@ The following internal environment variables are provided by the baseimage:
 |`XDG_DATA_HOME`| Defines the base directory relative to which user specific data files should be stored. | `/config/xdg/data` |
 |`XDG_CACHE_HOME`| Defines the base directory relative to which user specific non-essential data files should be stored. | `/config/xdg/cache` |
 |`TAKE_CONFIG_OWNERSHIP`| When set to `0`, ownership of the content of the `/config` directory is not taken during startup of the container. | `1` |
+|`INSTALL_PACKAGES_INTERNAL`| Space-separated list of packages to install during the startup of the container.  Packages are installed from the repository of the Linux distribution this container is based on. | `""` |
 
 #### Adding/Removing Internal Environment Variables
 
@@ -934,7 +935,7 @@ The following table shows how to find the relevant information:
 | Name     | The first string of `WM_CLASS`. |
 | Class    | The second string of `WM_CLASS`. |
 | Type     | The type of the window is given by `_NET_WM_WINDOW_TYPE`. Property's value should be translated to one of the following values: `desktop`, `dialog`, `dock`, `menu`, `normal`, `notification`, `splash`, `toolbar`, `utility`. |
-| WmName   | The value of `WM_NAME`. |
+| Title    | The value of `WM_NAME`. |
 
 By default, the window manager configuration matches only the type of the
 window, which must be `normal`.  If more restrictions are needed, matching the
