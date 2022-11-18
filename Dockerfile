@@ -31,13 +31,13 @@ FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
 # NOTE: The latest official release of UPX (version 3.96) produces binaries that
 # crash on ARM.  We need to manually compile it with all latest fixes.
 FROM --platform=$BUILDPLATFORM alpine:3.15 AS upx
-RUN apk --no-cache add build-base git bash perl ucl-dev zlib-dev zlib-static && \
+RUN apk --no-cache add build-base cmake git bash perl ucl-dev zlib-dev zlib-static && \
     git clone https://github.com/upx/upx.git /tmp/upx && \
-    git -C /tmp/upx checkout f75ad8b && \
+    git -C /tmp/upx checkout v4.0.1 && \
     git -C /tmp/upx submodule init && \
     git -C /tmp/upx submodule update --recursive && \
-    make LDFLAGS=-static CXXFLAGS_OPTIMIZE= -C /tmp/upx -j$(nproc) all && \
-    cp -v /tmp/upx/src/upx.out /usr/bin/upx
+    make LDFLAGS=-static CXXFLAGS_OPTIMIZE= -C /tmp/upx -j$(nproc) && \
+    cp -v /tmp/upx/build/release/upx /usr/bin/upx
 
 # Build TigerVNC server.
 FROM --platform=$BUILDPLATFORM alpine:3.15 AS tigervnc
