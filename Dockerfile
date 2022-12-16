@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.4
 #
 # baseimage-gui Dockerfile
 #
@@ -28,16 +29,12 @@ ARG DEBIAN_PKGS="\
 FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
 
 # Build UPX.
-# NOTE: The latest official release of UPX (version 3.96) produces binaries that
-# crash on ARM.  We need to manually compile it with all latest fixes.
 FROM --platform=$BUILDPLATFORM alpine:3.15 AS upx
-RUN apk --no-cache add build-base cmake git bash perl ucl-dev zlib-dev zlib-static && \
-    git clone https://github.com/upx/upx.git /tmp/upx && \
-    git -C /tmp/upx checkout v4.0.1 && \
-    git -C /tmp/upx submodule init && \
-    git -C /tmp/upx submodule update --recursive && \
-    make LDFLAGS=-static CXXFLAGS_OPTIMIZE= -C /tmp/upx -j$(nproc) && \
-    cp -v /tmp/upx/build/release/upx /usr/bin/upx
+RUN apk --no-cache add build-base curl make cmake git && \
+    mkdir /tmp/upx && \
+    curl -# -L https://github.com/upx/upx/releases/download/v4.0.1/upx-4.0.1-src.tar.xz | tar xJ --strip 1 -C /tmp/upx && \
+    make -C /tmp/upx build/release-gcc -j$(nproc) && \
+    cp -v /tmp/upx/build/release-gcc/upx /usr/bin/upx
 
 # Build TigerVNC server.
 FROM --platform=$BUILDPLATFORM alpine:3.15 AS tigervnc
@@ -121,12 +118,12 @@ ARG TARGETPLATFORM
 COPY --from=xx / /
 COPY src/nginx/build.sh /tmp/build-nginx.sh
 RUN /tmp/build-nginx.sh
-RUN xx-verify --static /tmp/nginx-install/usr/sbin/nginx
+RUN xx-verify --static /tmp/nginx-install/sbin/nginx
 COPY --from=upx /usr/bin/upx /usr/bin/upx
-RUN upx /tmp/nginx-install/usr/sbin/nginx
+RUN upx /tmp/nginx-install/sbin/nginx
 # NOTE: Extended attributes are kept by buildx when using the COPY command.
 #       See https://wildwolf.name/multi-stage-docker-builds-and-xattrs/.
-RUN apk --no-cache add libcap && setcap cap_net_bind_service=ep /tmp/nginx-install/usr/sbin/nginx
+RUN apk --no-cache add libcap && setcap cap_net_bind_service=ep /tmp/nginx-install/sbin/nginx
 
 # Build noVNC.
 FROM --platform=$BUILDPLATFORM alpine:3.15 AS noVNC
@@ -220,20 +217,20 @@ RUN \
     rm -rf /var/cache/fontconfig/*
 
 # Add files.
-COPY helpers/* /usr/bin/
-COPY rootfs/ /
-COPY --from=tigervnc /tmp/tigervnc-install/usr/bin/Xvnc /opt/base/bin/
-COPY --from=tigervnc /tmp/tigervnc-install/usr/bin/vncpasswd /opt/base/bin/
-COPY --from=tigervnc /tmp/xkb-install/usr/share/X11/xkb /opt/base/share/X11/xkb
-COPY --from=tigervnc /tmp/xkbcomp-install/usr/bin/xkbcomp /opt/base/bin/
-COPY --from=jwm /tmp/jwm-install/usr/bin/jwm /opt/base/bin/
-COPY --from=fontconfig /tmp/fontconfig-install/opt /opt
-COPY --from=xdpyprobe /tmp/xdpyprobe/xdpyprobe /opt/base/bin/
-COPY --from=xprop /tmp/xprop-install/usr/bin/xprop /opt/base/bin/
-COPY --from=yad /tmp/yad-install/usr/bin/yad /opt/base/bin/
-COPY --from=nginx /tmp/nginx-install /
-COPY --from=dhparam /tmp/dhparam.pem /defaults/
-COPY --from=noVNC /opt/noVNC /opt/noVNC
+COPY --link helpers/* /opt/base/bin/
+COPY --link rootfs/ /
+COPY --link --from=tigervnc /tmp/tigervnc-install/usr/bin/Xvnc /opt/base/bin/
+COPY --link --from=tigervnc /tmp/tigervnc-install/usr/bin/vncpasswd /opt/base/bin/
+COPY --link --from=tigervnc /tmp/xkb-install/usr/share/X11/xkb /opt/base/share/X11/xkb
+COPY --link --from=tigervnc /tmp/xkbcomp-install/usr/bin/xkbcomp /opt/base/bin/
+COPY --link --from=jwm /tmp/jwm-install/usr/bin/jwm /opt/base/bin/
+COPY --link --from=fontconfig /tmp/fontconfig-install/opt /opt
+COPY --link --from=xdpyprobe /tmp/xdpyprobe/xdpyprobe /opt/base/bin/
+COPY --link --from=xprop /tmp/xprop-install/usr/bin/xprop /opt/base/bin/
+COPY --link --from=yad /tmp/yad-install/usr/bin/yad /opt/base/bin/
+COPY --link --from=nginx /tmp/nginx-install /opt/base/
+COPY --link --from=dhparam /tmp/dhparam.pem /defaults/
+COPY --link --from=noVNC /opt/noVNC /opt/noVNC
 
 # Set environment variables.
 ENV \

@@ -19,6 +19,35 @@ baseimage:
     needed on the client side) or via any VNC client.
   gui: true
   history:
+    - version: 4.2.2
+      date: 2022-12-11
+      changes:
+        fixed:
+          - 'Fixed by the update of `jlesage/baseimage` to version 3.3.3:'
+          - '2:Force the value of the `PATH` environment variable.  Any value configured during creation of the container should not affect operation of the container.'
+    - version: 4.2.1
+      date: 2022-12-01
+      changes:
+        fixed:
+          - 'Fixed by the update of `jlesage/baseimage` to version 3.3.2:'
+          - '2:Helper that takes ownership of a directory not handling correctly names with spaces.'
+          - '2:Handling of a service''s `workdir` ending with an end-of-line character.'
+    - version: 4.2.0
+      date: 2022-11-27
+      changes:
+        added:
+          - 'Image based on Alpine 3.17.'
+          - 'Added by the update of `jlesage/baseimage` to version 3.2.0:'
+          - '2:Helper to take ownership of a directory.'
+          - '2:Helper to determine if a boolean value is true or false.'
+          - '2:Internal environment variables are automatically loaded when logging in to the container.'
+          - '2:Init script to set permissions on `/tmp`.'
+        changed:
+          - 'Changed by the update of `jlesage/baseimage` to version 3.2.0:'
+          - '2:Baseimage''s binaries have been relocated to `/opt/base/bin`.'
+          - '2:Adjusted `PATH` environment variable to include `/opt/base/bin`.'
+        removed:
+          - 'Baseimage based on Debian 8 (reached its end of life on June 30 2020).'
     - version: 4.1.5
       date: 2022-11-07
       changes:
