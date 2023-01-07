@@ -41,8 +41,8 @@ needed on the client side) or via any VNC client.
       * [Configuration Directory](#configuration-directory)
          * [Application's Data Directories](#applications-data-directories)
       * [Container Log](#container-log)
+      * [Logrotate](#logrotate)
       * [Log Monitor](#log-monitor)
-         * [Monitored Files](#monitored-files)
          * [Notification Definition](#notification-definition)
          * [Notification Backend](#notification-backend)
       * [Adding glibc](#adding-glibc)
@@ -103,14 +103,14 @@ Here are the main components of the baseimage:
   * A process supervisor, with proper PID 1 functionality (proper reaping of
     processes).
   * [TigerVNC], a X server with an integrated VNC server.
-  * [JWM], a window manager.
+  * [Openbox], a window manager.
   * [noVNC], a HTML5 VNC client.
   * [NGINX], a high-performance HTTP server.
   * Useful tools to ease container building.
   * Environment to better support dockerized applications.
 
 [TigerVNC]: https://tigervnc.org
-[JWM]: https://joewing.net/projects/jwm
+[Openbox]: http://openbox.org
 [noVNC]: https://github.com/novnc/noVNC
 [NGINX]: https://www.nginx.com
 
@@ -644,6 +644,7 @@ various data.  The baseimage sets these variables so they all fall under
   * XDG_DATA_HOME=/config/xdg/data
   * XDG_CONFIG_HOME=/config/xdg/config
   * XDG_CACHE_HOME=/config/xdg/cache
+  * XDG_STATE_HOME=/config/xdg/state
 
 [XDG Base Directory Specification]: https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
@@ -666,34 +667,59 @@ could be:
 exec /usr/bin/my_service > /config/log/my_service_out.log 2> /config/log/my_service_err.log
 ```
 
+### Logrotate
+
+The baseimage integrates `logrotate`, an utility used to rotate and compress
+log files.  This tool runs automatically once a day via a service.  The service
+is automatically disabled when no log files are configured.
+
+To enable the rotation/compression of a log file, a configuration file needs to
+be added to the `/etc/cont-logrotate.d` directory inside the container.  This
+configuration defines how to handle this specific log file.
+
+Here is a simple example of a configuration defined at
+`/etc/cont-logrotate.d/myapp`:
+
+```
+/config/log/myapp.log {
+    minsize 1M
+}
+```
+
+This configuration file can override the default parameters, which are defined
+at `/opt/base/etc/logrotate.conf` inside the container.  In summary, by default:
+  - Log files are rotated weekly.
+  - Four weeks worth of backlogs are kept.
+  - Rotated log files are compressed.
+  - Date is used as a suffix of rotated log files.
+
+For more details about the content of `logrotate` configuration files, see the
+manual at https://linux.die.net/man/8/logrotate.
+
 ### Log Monitor
 
-The baseimage include a simple log monitor.  This monitor allows sending
+The baseimage includes a simple log monitor.  This monitor allows sending
 notification(s) when a particular message is detected in a log or status file.
 
-This system has two main components: notification definitions and notification
-backends (targets).  Definitions describe properties of a notification (title,
-message, severity, etc) and how it is triggered (filtering function).  Once a
-matching string is found in a file, a notification is triggered and sent to one
-or more backends.  A backend can implement any functionality.  For example, it
-could send the notification to the container's log, a file or an online service.
+This system has two main components:
+  - **Notification definitions**: Describe properties of a notification (title,
+    message, severity, etc),  how it is triggered (filtering function) and the
+    associated monitored file(s).
+  - **Backends (targets)**:  Once a matching string is found in a file, a
+    notification is triggered and sent to one or more backends.  A backend can
+    implement any functionality.  For example, it could send the notification to
+    the container's log, a file or an online service.
 
-#### Monitored Files
-
-File(s) to be monitored can be set in the configuration file located at
-`/etc/logmonitor/logmonitor.conf`.  There are two settings to look at:
-
-  * `LOG_FILES`: Comma-separated list of absolute paths to log files to be
-    monitored.  A log file is a file having new content appended to it.
-  * `STATUS_FILES`: Comma-separated list of absolute paths to status files to be
-    monitored.  A status file doesn't have new content appended.  Instead, its
-    whole content is refreshed/overwritten periodically.
+There are two types of files that can be monitored:
+  - **Log files**: A log file is a file having new content appended to it.
+  - **Status files*: A status file doesn't have new content appended.  Instead,
+    its whole content is refreshed/overwritten periodically.
 
 #### Notification Definition
 
 The definition of a notification consists in multiple files, stored in a
-directory under `/etc/logmonitor/notifications.d`.  For example, definition of
-notification `MYNOTIF` is found under
+directory under `/etc/logmonitor/notifications.d` inside the container.  For
+example, definition of notification `MYNOTIF` is found under
 `/etc/logmonitor/notifications.d/MYNOTIF/`.
 
 The following table describe files part of the definition:
@@ -704,22 +730,19 @@ The following table describe files part of the definition:
 | `title`  | Yes        | File containing the title of the notification.  To produce dynamic content, the file can be a program (script or binary with executable permission).  In this case, the program is invoked by the log monitor with the matched message from the log file as the single argument.  Output of the program is used as the notification's title. |
 | `desc`   | Yes        | File containing the description/message of the notification.  To produce dynamic content, the file can be a program (script or binary with executable permission).  In this case, the program is invoked by the log monitor with the matched message from the log file as the single argument.  Output of the program is used as the notification's description/message. |
 | `level`  | Yes        | File containing severity level of the notification.  Valid severity level values are `ERROR`, `WARNING` or `INFO`.  To produce dynamic content, the file can be a program (script or binary with executable permission).  In this case, the program is invoked by the log monitor with the matched message from the log file as the single argument.  Output of the program is used as the notification's severity level. |
+| `source` | Yes        | File containing the absolute path(s) to file(s) to monitor (one path per line).  Prepend the path with `status:` to indicate that the file is a status file.  A path with prefixed with `log:` or without any prefix is considered as a log file.  |
 
 #### Notification Backend
 
 Definition of a notification backend is stored in a directory under
-`/etc/logmonitor/targets.d`.  For example, definition of `STDOUT` backend is
-found under `/etc/logmonitor/notifications.d/STDOUT/`.  The following table
+`/etc/cont-logmonitor/targets.d`.  For example, definition of `STDOUT` backend is
+found under `/etc/cont-logmonitor/target.d/STDOUT/`.  The following table
 describe files part of the definition:
 
 | File         | Mandatory  | Description |
 |--------------|------------|-------------|
 | `send`       | Yes        | Program (script or binary with executable permission) that sends the notification.  It is invoked by the log monitor with the following notification properties as arguments: title, description/message and the severity level. |
 | `debouncing` | No         | File containing the minimum amount time (in seconds) that must elapse before sending the same notification with this backend.  A value of `0` means infinite (notification is sent once).  If this file is missing, no debouncing is done. |
-
-**NOTE**: The log monitor invokes the notification backend and then waits for
-its termination.  So it is important to make sure that the execution of the
-`send` program terminates after a reasonable amount of time.
 
 By default, the baseimage contains the following notification backends:
 
@@ -998,13 +1021,15 @@ windows of the application.  A specific window is identified by matching one or
 more of its properties:
   - Name of the window.
   - Class of the window.
+  - Title of the window.
   - Type of the window.
+  - etc.
 
 To find the value of a property for a particular window:
   - Create and start an instance of the container.
-  - From the host, start the `xprop` tool:
+  - From the host, start the `obxprop` tool:
 ```shell
-docker exec [container name or id] env DISPLAY=:0 xprop
+docker exec [container name or id] obxprop | grep "^_OB_APP"
 ```
   - Access the GUI of the application and click somewhere on the
     interested window.
@@ -1012,30 +1037,33 @@ docker exec [container name or id] env DISPLAY=:0 xprop
 
 The following table shows how to find the relevant information:
 
-| Property | Value |
-|----------|-------|
-| Name     | The first string of `WM_CLASS`. |
-| Class    | The second string of `WM_CLASS`. |
-| Type     | The type of the window is given by `_NET_WM_WINDOW_TYPE`. Property's value should be translated to one of the following values: `desktop`, `dialog`, `dock`, `menu`, `normal`, `notification`, `splash`, `toolbar`, `utility`. |
-| Title    | The value of `WM_NAME`. |
+| Property   | Value |
+|------------|-------|
+| Name       | The window's `_OB_APP_NAME` property. |
+| Class      | The window's `_OB_APP_CLASS` property. |
+| Title      | The window's `_OB_APP_TITLE` property. |
+| GroupName  | The window's `_OB_APP_GROUP_NAME property`. |
+| GroupClass | The window's `_OB_APP_GROUP_CLASS property`. |
+| Type       | The window's `_OB_APP_TYPE property`.  The type can be one of the following values: `desktop`, `dialog`, `dock`, `menu`, `normal`, `notification`, `splash`, `toolbar`, `utility`. |
+| Role       | The window's `_OB_APP_ROLE` property. |
 
 By default, the window manager configuration matches only the type of the
-window, which must be `normal`.  If more restrictions are needed, matching the
-name of the window can help.
+window, which must be `normal`.  More restrictions can be added to better
+select the correct window.
 
-To do this, matching criterias can be defined using the file located at
-`/etc/jwm/main-window-selection.jwmrc` in the container.  This file should have
-one matching critera per line, in XML format.  For example, to match against
-both the type and the name of the window, the file content should be:
+To do this, matching criterias can be defined by adding a file located at
+`/etc/openbox/main-window-selection.xml` in the container.  This file should
+have one matching critera per line, in XML format.  For example, to match
+against both the type and the name of the window, the file content should be:
 
 ```xml
 <Type>normal</Type>
 <Name>My Application</Name>
 ```
 
-Note that a regex can be used as a property's value.
-
-See the JWM documentation for more details: https://joewing.net/projects/jwm/config.html
+**NOTE**: To maintain backward compatibility with previous 4.x versions, the
+          container fallbacks to `/etc/jwm/main-window-selection.jwmrc` if
+          `/etc/openbox/main-window-selection.xml` does not exist.
 
 #### Adaptations from the 3.x Version
 
@@ -1055,6 +1083,6 @@ tips:
   - Set the `APP_VERSION` and `DOCKER_IMAGE_VERSION` internal environment
     variables when/if needed.
   - Any adjustment to the window manager config (e.g. to maximize only the main
-    window) should be readapted to the new window manager.  See the
+    window) should be adapted to use the new mechanism.  See the
     [Maximizing Only the Main Window](#maximizing-only-the-main-window) section.
 
