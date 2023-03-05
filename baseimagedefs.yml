@@ -19,6 +19,47 @@ baseimage:
     needed on the client side) or via any VNC client.
   gui: true
   history:
+    - version: 4.4.0
+      date: 2023-03-04
+      changes:
+        added:
+          - 'Support for generating icons from local file.'
+          - 'Dark mode support for GTK2 applications.'
+        changed:
+          - 'Updated TigerVNC to version 1.13.0.'
+          - 'Updated noVNC to version 1.4.0.'
+          - 'Updated YAD to version 0.42.43.'
+        fixed:
+          - 'Disabled automatic focus on clipboard on touch devices.'
+          - 'Keep virtual keyboard when closing control menu.'
+          - 'Fixed by the update of `jlesage/baseimage` to version 3.4.6:'
+          - '2:Issue during initialization of Linux users and groups when the `GROUP_ID` is also part of `SUP_GROUP_IDS`.'
+    - version: 4.3.6
+      date: 2023-02-13
+      changes:
+        fixed:
+          - 'Fixed by the update of `jlesage/baseimage` to version 3.4.5:'
+          - '2:Limit the maximum number of opened files on system having a very large, unlimited value.  This prevents unnecessary waste of CPU resources and time for applications trying to close all possible file descriptors.'
+    - version: 4.3.5
+      date: 2023-02-09
+      changes:
+        fixed:
+          - 'Fixed by the update of `jlesage/baseimage` to version 3.4.4:'
+          - '2:Issue handling internal supplementary group IDs by the default `sgid` service file.'
+    - version: 4.3.4
+      date: 2023-02-07
+      changes:
+        fixed:
+          - 'Error message from openbox about missing Fontconfig cache directory.'
+    - version: 4.3.3
+      date: 2023-02-04
+      changes:
+        fixed:
+          - 'Fixed by the update of `jlesage/baseimage` to version 3.4.3:'
+          - '2:Helper that takes ownership of a directory not handling correctly names with end-of-line character.'
+          - '2:The logrotate status file permissions was not set automatically during startup.'
+          - '2:Strings `y` and `n` were not considered as valid boolean values.'
+          - 'CJK font installation not being detected correctly.'
     - version: 4.3.2
       date: 2023-01-06
       changes:
@@ -636,7 +677,6 @@ container:
         Password needed to connect to the application's GUI.  See the
         [VNC Password](#vnc-password) section for more details.
       type: public
-      default: '""'
     - name: ENABLE_CJK_FONT
       description: >-
         When set to `1`, open-source computer font `WenQuanYi Zen Hei` is
