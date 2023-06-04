@@ -15,7 +15,7 @@ set -u # Treat unset variables as an error.
 
 # Define software versions.
 TIGERVNC_VERSION=1.13.1
-XSERVER_VERSION=1.20.13
+XSERVER_VERSION=1.20.14
 
 # Use the same versions has Alpine 3.15.
 GNUTLS_VERSION=3.7.1
@@ -33,7 +33,7 @@ XKBCOMP_VERSION=1.4.5
 
 # Define software download URLs.
 TIGERVNC_URL=https://github.com/TigerVNC/tigervnc/archive/v${TIGERVNC_VERSION}.tar.gz
-XSERVER_URL=https://github.com/freedesktop/xorg-xserver/archive/xorg-server-${XSERVER_VERSION}.tar.gz
+XSERVER_URL=https://www.x.org/releases/individual/xserver/xorg-server-${XSERVER_VERSION}.tar.gz
 
 GNUTLS_URL=https://www.gnupg.org/ftp/gcrypt/gnutls/v${GNUTLS_VERSION%.*}/gnutls-${GNUTLS_VERSION}.tar.xz
 LIBXFONT2_URL=https://www.x.org/pub/individual/lib/libXfont2-${LIBXFONT2_VERSION}.tar.gz
@@ -118,7 +118,7 @@ xx-apk --no-cache --no-scripts add \
 #
 mkdir /tmp/gnutls
 log "Downloading GNU TLS..."
-curl -# -L ${GNUTLS_URL} | tar -xJ --strip 1 -C /tmp/gnutls
+curl -# -L -f ${GNUTLS_URL} | tar -xJ --strip 1 -C /tmp/gnutls
 log "Configuring GNU TLS..."
 (
     cd /tmp/gnutls && ./configure \
@@ -148,7 +148,7 @@ make DESTDIR=$(xx-info sysroot) -C /tmp/gnutls install
 #
 mkdir /tmp/libxfont2
 log "Downloading libXfont2..."
-curl -# -L ${LIBXFONT2_URL} | tar -xz --strip 1 -C /tmp/libxfont2
+curl -# -L -f ${LIBXFONT2_URL} | tar -xz --strip 1 -C /tmp/libxfont2
 log "Configuring libXfont2..."
 (
     cd /tmp/libxfont2 && ./configure \
@@ -174,7 +174,7 @@ make DESTDIR=$(xx-info sysroot) -C /tmp/libxfont2 install
 #
 mkdir /tmp/libfontenc
 log "Downloading libfontenc..."
-curl -# -L ${LIBFONTENC_URL} | tar -xz --strip 1 -C /tmp/libfontenc
+curl -# -L -f ${LIBFONTENC_URL} | tar -xz --strip 1 -C /tmp/libfontenc
 log "Configuring libfontenc..."
 (
     cd /tmp/libfontenc && ./configure \
@@ -197,7 +197,7 @@ make DESTDIR=$(xx-info sysroot) -C /tmp/libfontenc install
 #
 mkdir /tmp/libtasn1
 log "Downloading libtasn1..."
-curl -# -L ${LIBTASN1_URL} | tar -xz --strip 1 -C /tmp/libtasn1
+curl -# -L -f ${LIBTASN1_URL} | tar -xz --strip 1 -C /tmp/libtasn1
 log "Configuring libtasn1..."
 (
     cd /tmp/libtasn1 && CFLAGS="$CFLAGS -Wno-error=inline" ./configure \
@@ -219,7 +219,7 @@ make DESTDIR=$(xx-info sysroot) -C /tmp/libtasn1 install
 #
 mkdir /tmp/libxshmfence
 log "Downloading libxshmfence..."
-curl -# -L ${LIBXSHMFENCE_URL} | tar -xz --strip 1 -C /tmp/libxshmfence
+curl -# -L -f ${LIBXSHMFENCE_URL} | tar -xz --strip 1 -C /tmp/libxshmfence
 log "Configuring libxshmfence..."
 (
     cd /tmp/libxshmfence && ./configure \
@@ -240,9 +240,9 @@ make DESTDIR=$(xx-info sysroot) -C /tmp/libxshmfence install
 #
 mkdir /tmp/tigervnc
 log "Downloading TigerVNC..."
-curl -# -L ${TIGERVNC_URL} | tar -xz --strip 1 -C /tmp/tigervnc
+curl -# -L -f ${TIGERVNC_URL} | tar -xz --strip 1 -C /tmp/tigervnc
 log "Downloading Xorg server..."
-curl -# -L ${XSERVER_URL} | tar -xz --strip 1 -C /tmp/tigervnc/unix/xserver
+curl -# -L -f ${XSERVER_URL} | tar -xz --strip 1 -C /tmp/tigervnc/unix/xserver
 
 log "Patching TigerVNC..."
 # Apply the TigerVNC patch against the X server.
@@ -349,7 +349,7 @@ make DESTDIR=/tmp/tigervnc-install -C /tmp/tigervnc/unix/vncpasswd install
 #
 mkdir /tmp/xkb
 log "Downloading XKeyboardConfig..."
-curl -# -L ${XKEYBOARDCONFIG_URL} | tar -xj --strip 1 -C /tmp/xkb
+curl -# -L -f ${XKEYBOARDCONFIG_URL} | tar -xj --strip 1 -C /tmp/xkb
 log "Configuring XKeyboardConfig..."
 (
     cd /tmp/xkb && abuild-meson . build
@@ -401,7 +401,7 @@ find /tmp/xkb-install/usr/share/X11/xkb -mindepth 1 ! -type d $(printf "! -whole
 #
 mkdir /tmp/xkbcomp
 log "Downloading xkbcomp..."
-curl -# -L ${XKBCOMP_URL} | tar -xj --strip 1 -C /tmp/xkbcomp
+curl -# -L -f ${XKBCOMP_URL} | tar -xj --strip 1 -C /tmp/xkbcomp
 
 log "Configuring xkbcomp..."
 (
